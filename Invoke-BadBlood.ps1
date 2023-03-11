@@ -166,7 +166,7 @@ if ($badblood -eq 'badblood') {
    $I++
    write-host "Creating Permissions on Domain" -ForegroundColor Green
    Write-Progress -Activity "Random Stuff into A domain - Creating Random Permissions" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
-   .($basescriptPath + '\AD_Permissions_Randomizer\GenerateRandomPermissions.ps1')
+   #.($basescriptPath + '\AD_Permissions_Randomizer\GenerateRandomPermissions.ps1')
     
     
    # Nesting of objects
