@@ -161,7 +161,7 @@ if ($badblood -eq 'badblood') {
    }while ($x -lt $ComputerCount)
    $Complist = get-adcomputer -filter *
     
-
+<#
    #Permission Creation of ACLs
    $I++
    write-host "Creating Permissions on Domain" -ForegroundColor Green
@@ -196,7 +196,7 @@ if ($badblood -eq 'badblood') {
       $ASREPUsers += get-random($AllUsers)
       $asrep++}while($asrep -le $ASREPCount)
 
-   .($basescriptpath + '\AD_Attack_Vectors\ASREP_NotReqPreAuth.ps1')
+   # .($basescriptpath + '\AD_Attack_Vectors\ASREP_NotReqPreAuth.ps1')
    ADREP_NotReqPreAuth -UserList $ASREPUsers
       <#
    write-host "Adding Weak User Passwords for a few users" -ForegroundColor Green
@@ -216,139 +216,5 @@ if ($badblood -eq 'badblood') {
 
 
 }
-# $Definition = Get-Content Function:\CreateUser -ErrorAction Stop
-   <#
-   Attempt at multi threading.  Issues with AD Limits and connections per user per second.
-   #Add custom function to runspace pool https://devblogs.microsoft.com/scripting/powertip-add-custom-function-to-runspace-pool/
-   $Definition = Get-Content ($basescriptPath + '\AD_Users_Create\CreateUsers.ps1') -ErrorAction Stop
-   #Create a sessionstate function entry
-   $SessionStateFunction = New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList ‘CreateUser’, $Definition
-   #Create a SessionStateFunction
-   $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
-   $initialSessionState.ImportPSModule("ActiveDirectory")
-   $InitialSessionState.Commands.Add($SessionStateFunction)
-
-   $RunspacePool = [RunspaceFactory]::CreateRunspacePool(1,5,$InitialSessionState,$Host)
-   $RunspacePool.Open()
-   $runspaces = $results = @()
-   do {
-     
-      $PowerShell = [powershell]::Create()
-      [void]$PowerShell.AddScript({CreateUser})
-      [void]$PowerShell.AddArgument($Domain)
-      [void]$PowerShell.AddArgument($ousAll)
-      [void]$PowerShell.AddArgument($createuserscriptpath)
-      $PowerShell.RunspacePool = $RunspacePool
-      $runspaces += [PSCustomObject]@{ Pipe = $PowerShell; Status = $PowerShell.BeginInvoke() }
-      #$runspaces.pipe.streams.error
-      
-      # $Jobs += $PowerShell.BeginInvoke()
-       $x++
-
-   }while ($x -lt $UserCount)
-
-   while ($runspaces.status.IsCompleted -notcontains $true) {
-        
-   }
-
-   foreach ($runspace in $runspaces ) {
-      # EndInvoke method retrieves the results of the asynchronous call
-      $results += $runspace.Pipe.EndInvoke($runspace.Status)
-      $runspace.Pipe.Dispose()
-  }
-  $RunspacePool.Close() 
-   $RunspacePool.Dispose()
-
-   #Group Creation
-   $I++
-   $AllUsers = Get-aduser -Filter *
-   Write-Progress -Activity "Random Stuff into A domain - Creating Groups" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
-   write-host "Creating Groups on Domain" -ForegroundColor Green
-
-   $x = 1
-   .($basescriptPath + '\AD_Groups_Create\CreateGroup.ps1')
-   
-   #Create a SessionStateFunction
-  
-   
-
-   $createGroupScriptPath = $basescriptPath + '\AD_Groups_Create\'
-   $Definition = Get-Content Function:\CreateGroup -ErrorAction Stop
-   # $Definition = Get-Content ($basescriptPath + '\AD_Groups_Create\CreateGroup.ps1') -ErrorAction Stop
-
-   #Create a sessionstate function entry
-   $SessionStateFunction = New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList ‘CreateGroup’, $Definition
-   #Create a SessionStateFunction
-   $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
-   $initialSessionState.ImportPSModule("ActiveDirectory")
-   $InitialSessionState.Commands.Add($SessionStateFunction)
-
-   $RunspacePool = [RunspaceFactory]::CreateRunspacePool(1,5,$InitialSessionState,$Host)
-   $RunspacePool.Open()
-   $runspaces = $results = @()
-   do {
-      $PowerShell = [powershell]::Create()
-      [void]$PowerShell.AddScript({CreateGroup})
-      [void]$PowerShell.AddArgument($Domain)
-      [void]$PowerShell.AddArgument($ousAll)
-      [void]$PowerShell.AddArgument($AllUsers)
-      [void]$PowerShell.AddArgument($createGroupScriptPath)
-      $PowerShell.RunspacePool = $RunspacePool
-      $runspaces += [PSCustomObject]@{ Pipe = $PowerShell; Status = $PowerShell.BeginInvoke() }
-
-      $x++
-   }while ($x -lt $GroupCount)
-   while ($runspaces.Status.IsCompleted -notcontains $true) {
-        
-   }
-   foreach ($runspace in $runspaces ) {
-      # EndInvoke method retrieves the results of the asynchronous call
-      $results += $runspace.Pipe.EndInvoke($runspace.Status)
-      $runspace.Pipe.Dispose()
-  }
-  $RunspacePool.Close() 
-   $RunspacePool.Dispose()
-
-
-   $Grouplist = Get-ADGroup -Filter { GroupCategory -eq "Security" -and GroupScope -eq "Global" } -Properties isCriticalSystemObject
-   $LocalGroupList = Get-ADGroup -Filter { GroupScope -eq "domainlocal" } -Properties isCriticalSystemObject
-
-   #Computer Creation Time
-   write-host "Creating Computers on Domain" -ForegroundColor Green
-   $I++
-   $X = 1
-   $Jobs = @()
-   Write-Progress -Activity "Random Stuff into A domain - Creating Computers" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
-   # .($basescriptPath + '\AD_Computers_Create\CreateComputers.ps1')
-    #Create a sessionstate function entry
-    
-    $Definition = Get-Content ($basescriptPath + '\AD_Computers_Create\CreateComputers.ps1') -ErrorAction Stop
-    $SessionStateFunction = New-Object System.Management.Automation.Runspaces.SessionStateFunctionEntry -ArgumentList ‘CreateComputer’, $Definition
-    #Create a SessionStateFunction
-    $InitialSessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
-    $initialSessionState.ImportPSModule("ActiveDirectory")
-    $InitialSessionState.Commands.Add($SessionStateFunction)
- 
-    $RunspacePool = [RunspaceFactory]::CreateRunspacePool(1,5,$InitialSessionState,$Host)
-    $RunspacePool.Open()
-    $runspaces = $results = @()
-
-   do {
-      $PowerShell = [powershell]::Create()
-      [void]$PowerShell.AddScript({CreateComputer})
-      $PowerShell.RunspacePool = $RunspacePool
-      $runspaces += [PSCustomObject]@{ Pipe = $PowerShell; Status = $PowerShell.BeginInvoke() }
-
-      $x++
-   }while ($x -lt $ComputerCount)
-   while ($runspaces.Status.IsCompleted -notcontains $true) {
-        
-   }
-   foreach ($runspace in $runspaces ) {
-      # EndInvoke method retrieves the results of the asynchronous call
-      $results += $runspace.Pipe.EndInvoke($runspace.Status)
-      $runspace.Pipe.Dispose()
-  }
-  $RunspacePool.Close() 
-   $RunspacePool.Dispose()
 #>
+}
