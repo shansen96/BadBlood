@@ -47,69 +47,40 @@ param
       HelpMessage = 'Make non-interactive for automation')]
    [switch]$NonInteractive
 )
-function Get-ScriptDirectory {
+function Get-ScriptDirectory
+{
    Split-Path -Parent $PSCommandPath
 }
 $basescriptPath = Get-ScriptDirectory
 $totalscripts = 8
 
 $i = 0
-Clear-host
-write-host "Welcome to BadBlood"
-if($NonInteractive -eq $false){
-    Write-Host  'Press any key to continue...';
-    write-host "`n"
-    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
-}
-write-host "The first tool that absolutely mucks up your TEST domain"
-write-host "This tool is never meant for production and can totally screw up your domain"
-
-if($NonInteractive -eq $false){
-    Write-Host  'Press any key to continue...';
-    write-host "`n"
-    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
-}
-Write-Host  'Press any key to continue...';
-write-host "You are responsible for how you use this tool. It is intended for personal use only"
-write-host "This is not intended for commercial use"
-if($NonInteractive -eq $false){
-    Write-Host  'Press any key to continue...';
-    write-host "`n"
-    $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
-}
-write-host "`n"
-write-host "Domain size generated via parameters `n Users: $UserCount `n Groups: $GroupCount `n Computers: $ComputerCount"
-write-host "`n"
 $badblood = "badblood"
-if($NonInteractive -eq $false){
 
-    $badblood = Read-Host -Prompt "Type `'badblood`' to deploy some randomness into a domain"
-    $badblood.tolower()
-    if ($badblood -ne 'badblood') { exit }
-}
-if ($badblood -eq 'badblood') {
+if ($badblood -eq 'badblood')
+{
 
    $Domain = Get-addomain
 
    # LAPS STUFF
    if ($PSBoundParameters.ContainsKey('SkipLapsInstall') -eq $false)
-      {
-         Write-Progress -Activity "Random Stuff into A domain" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
-         .($basescriptPath + '\AD_LAPS_Install\InstallLAPSSchema.ps1')
-         Write-Progress -Activity "Random Stuff into A domain: Install LAPS" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
-      }
-   else{}
+   {
+      Write-Progress -Activity "Random Stuff into A domain" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
+      .($basescriptPath + '\AD_LAPS_Install\InstallLAPSSchema.ps1')
+      Write-Progress -Activity "Random Stuff into A domain: Install LAPS" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
+   }
+   else {}
    
    $I++
 
 
    #OU Structure Creation
    if ($PSBoundParameters.ContainsKey('SkipOuCreation') -eq $false)
-      {
-         .($basescriptPath + '\AD_OU_CreateStructure\CreateOUStructure.ps1')
-         Write-Progress -Activity "Random Stuff into A domain - Creating OUs" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
-      }
-   else{}
+   {
+      .($basescriptPath + '\AD_OU_CreateStructure\CreateOUStructure.ps1')
+      Write-Progress -Activity "Random Stuff into A domain - Creating OUs" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
+   }
+   else {}
    $I++
 
    
@@ -123,13 +94,14 @@ if ($badblood -eq 'badblood') {
    
    .($basescriptPath + '\AD_Users_Create\CreateUsers.ps1')
    $createuserscriptpath = $basescriptPath + '\AD_Users_Create\'
-   do {
+   do
+   {
       createuser -Domain $Domain -OUList $ousAll -ScriptDir $createuserscriptpath
       Write-Progress -Activity "Random Stuff into A domain - Creating $UserCount Users" -Status "Progress:" -PercentComplete ($x / $UserCount * 100)
       $x++
    }while ($x -lt $UserCount)
 
-  #Group Creation
+   #Group Creation
    $AllUsers = Get-aduser -Filter *
    write-host "Creating Groups on Domain" -ForegroundColor Green
 
@@ -139,7 +111,8 @@ if ($badblood -eq 'badblood') {
    .($basescriptPath + '\AD_Groups_Create\CreateGroup.ps1')
    $createGroupScriptPath = $basescriptPath + '\AD_Groups_Create\'
     
-   do {
+   do
+   {
       Creategroup -Domain $Domain -OUList $ousAll -UserList $AllUsers -ScriptDir $createGroupScriptPath
       Write-Progress -Activity "Random Stuff into A domain - Creating $GroupCount Groups" -Status "Progress:" -PercentComplete ($x / $GroupCount * 100)
       $x++
@@ -154,14 +127,15 @@ if ($badblood -eq 'badblood') {
    Write-Progress -Activity "Random Stuff into A domain - Creating Computers" -Status "Progress:" -PercentComplete ($i / $totalscripts * 100)
    .($basescriptPath + '\AD_Computers_Create\CreateComputers.ps1')
    $I++
-   do {
+   do
+   {
       Write-Progress -Activity "Random Stuff into A domain - Creating $ComputerCount computers" -Status "Progress:" -PercentComplete ($x / $ComputerCount * 100)
       createcomputer
       $x++
    }while ($x -lt $ComputerCount)
    $Complist = get-adcomputer -filter *
     
-<#
+   <#
    #Permission Creation of ACLs
    $I++
    write-host "Creating Permissions on Domain" -ForegroundColor Green
@@ -214,7 +188,23 @@ if ($badblood -eq 'badblood') {
    WeakUserPasswords -UserList $WeakUsers
     #>
 
+    # Further Active Directory configuration
 
-}
-#>
+    $SiteLandFillA = New-ADReplicationSite -Confirm:$false -Name "LandfillA" -PassThru
+    $SiteLandFillB = New-ADReplicationSite -Confirm:$false -Name "LandfillB" -PassThru
+    $SiteTrashChute = New-ADReplicationSite -Confirm:$false -Name "TrashChute" -TopologyDetectStaleEnabled:$false -PassThru
+    $SiteDumpsterInAlley = New-ADReplicationSite -Confirm:$false -Name "DumpsterInAlley" -PassThru
+    $SiteHyperconvergedInfrastructure = New-ADReplicationSite -Confirm:$false -Name "HyperconvergedInfrastructure" -PassThru
+
+    New-ADReplicationSubnet -Confirm:$false -Name "192.168.1.0/24" -Site $SiteLandFillA.Name
+    New-ADReplicationSubnet -Confirm:$false -Name "192.168.2.0/24" -Site $SiteLandFillB.Name
+    New-ADReplicationSubnet -Confirm:$false -Name "192.168.3.0/24" -Site $SiteTrashChute.Name
+    New-ADReplicationSubnet -Confirm:$false -Name "192.168.4.0/24" -Site $SiteDumpsterInAlley.Name
+    New-ADReplicationSubnet -Confirm:$false -Name "192.168.5.0/24" -Site $SiteHyperconvergedInfrastructure.Name
+
+    New-ADReplicationSiteLink -Name "LandfillA-LandfillB" -SitesIncluded "LandfillA","LandfillB" -OtherAttributes @{'cost'= 50} -Confirm:$false
+    New-ADReplicationSiteLink -Name "TrashChute-Dumpster" -SitesIncluded "TrashChute","DumpsterInAlley" -OtherAttributes @{'cost'= 5} -Confirm:$false
+    New-ADReplicationSiteLink -Name "HyperConvergedInfrastructure-LandFillA" -SitesIncluded "LandfillA","HyperconvergedInfrastructure" -OtherAttributes @{'cost'= 99} -Confirm:$false
+    Start-Sleep -Seconds 10
+    New-ADReplicationSiteLinkBridge -Name "TrashPipeline-Landfills" -SiteLinksIncluded "LandfillA-LandfillB","TrashChute-Dumpster" -Confirm:$false
 }
